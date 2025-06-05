@@ -1,12 +1,23 @@
 # AI Trainer
 
+
+This repository contains various experiments for processing pose data.
+
+## Running tests
+
+To run the unit tests, install `pytest` and execute:
+
+```bash
+pytest
+```
+
 This repository contains experiments with pose estimation and
 recommendation models for analyzing human motion.
 
 ## License
 
 Distributed under the [MIT License](LICENSE).
-=======
+
 This project provides a set of experiments for analysing human pose with OpenCV, MediaPipe and PyTorch. It compares a reference exercise video against live camera input and gives verbal recommendations.
 
 ## Requirements
