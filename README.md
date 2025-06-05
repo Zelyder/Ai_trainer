@@ -1,5 +1,12 @@
 # AI Trainer
 
+This repository contains experiments with pose estimation and
+recommendation models for analyzing human motion.
+
+## License
+
+Distributed under the [MIT License](LICENSE).
+=======
 This project provides a set of experiments for analysing human pose with OpenCV, MediaPipe and PyTorch. It compares a reference exercise video against live camera input and gives verbal recommendations.
 
 ## Requirements
@@ -23,3 +30,4 @@ python ai2.py
 After starting the program select a reference video (e.g. `source.mp4`) when prompted. The webcam feed will be compared against the reference, recommendations will be displayed on the screen and voiced via `pyttsx3`.
 
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
+
