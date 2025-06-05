@@ -84,12 +84,49 @@ def load_and_clean(path_pkl, max_frames=100, max_samples=1000):
     return X, y
 
 
-# вызов функции
-path = "ntu60_hrnet.pkl"
+def main():
+    path = "ntu60_hrnet.pkl"
 
-X, y = load_and_clean(path, max_samples=500)
-print("Форма X:", X.shape)
-print("Форма y:", y.shape)
+    X, y = load_and_clean(path, max_samples=500)
+    print("Форма X:", X.shape)
+    print("Форма y:", y.shape)
+
+    global pose, engine, clf, rec_net
+    pose = mp_pose.Pose()
+    engine = pyttsx3.init()
+    engine.setProperty('rate', 150)
+    clf = LSTMClassifier(input_size=4)
+    rec_net = RecommendationNet(input_size=4)
+
+    reference = extract_reference_from_video("source.mp4", max_frames=100)
+
+    cap = cv2.VideoCapture(0)
+    seq = []
+    max_len = reference.shape[0]
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        pts = extract_keypoints(frame)
+        if pts is not None and len(pts) >= 17:
+            angs = calc_angles_ntu(pts)
+            seq.append(angs)
+            if len(seq) > max_len:
+                seq.pop(0)
+            ref_ang = reference[len(seq) - 1]
+            inp = torch.tensor(np.abs(angs - ref_ang), dtype=torch.float32)
+            recs = rec_net(inp).detach().numpy()
+            speak(angs, ref_ang, recs)
+            frame = draw_info(frame, angs, ref_ang, recs)
+
+        cv2.imshow('Feedback', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 # === 4. ОСНОВНОЙ РЕАЛЬНОЙ ВРЕМЕНИ МОДУЛЬ ===
 import cv2
@@ -125,9 +162,8 @@ class RecommendationNet(nn.Module):
 
 # -- утилиты --
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
-engine = pyttsx3.init()
-engine.setProperty('rate', 150)
+pose = None
+engine = None
 spoken = [False] * 5
 
 
@@ -208,8 +244,8 @@ def speak(angs, ref, recs, thr=15):
 
 
 # -- инициализация моделей --
-clf = LSTMClassifier(input_size=4)
-rec_net = RecommendationNet(input_size=4)
+clf = None
+rec_net = None
 
 
 # Эталон (усреднённая последовательность по всем образцам, 4 угла)
@@ -231,32 +267,7 @@ def extract_reference_from_video(video_path, max_frames=100):
     return np.array(angles_seq)  # shape = (T, 4)
 
 
-reference = extract_reference_from_video("source.mp4", max_frames=100)
+if __name__ == "__main__":
+    main()
 
-# === Запуск обработки с веб-камеры ===
-cap = cv2.VideoCapture(0)
-seq = []
-max_len = reference.shape[0]
 
-while True:
-    ret, frame = cap.read()
-    if not ret: break
-
-    pts = extract_keypoints(frame)
-    if pts is not None and len(pts) >= 17:
-        angs = calc_angles_ntu(pts)
-        seq.append(angs)
-        if len(seq) > max_len:
-            seq.pop(0)
-        ref_ang = reference[len(seq) - 1]
-        inp = torch.tensor(np.abs(angs - ref_ang), dtype=torch.float32)
-        recs = rec_net(inp).detach().numpy()
-        speak(angs, ref_ang, recs)
-        frame = draw_info(frame, angs, ref_ang, recs)
-
-    cv2.imshow('Feedback', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
