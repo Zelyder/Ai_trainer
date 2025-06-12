@@ -6,6 +6,7 @@ spec = importlib.util.spec_from_file_location('skeleton_dtw', Path(__file__).res
 skeleton_dtw = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(skeleton_dtw)
 dtw_skeletons = skeleton_dtw.dtw_skeletons
+dtw_similarity = skeleton_dtw.dtw_similarity
 
 
 def make_skeleton(shift=0.0):
@@ -41,5 +42,19 @@ def test_dtw_shift():
     seq2 = [make_skeleton(0.1) for _ in range(3)]
     dist, _ = dtw_skeletons(seq1, seq2, w_ang=0)
     assert abs(dist - 0.21176470588235302) < 1e-6
+
+
+def test_dtw_similarity_identity():
+    seq = [make_skeleton() for _ in range(3)]
+    sim = dtw_similarity(seq, seq)
+    assert abs(sim - 1.0) < 1e-6
+
+
+def test_dtw_similarity_shift():
+    seq1 = [make_skeleton() for _ in range(3)]
+    seq2 = [make_skeleton(0.1) for _ in range(3)]
+    sim1 = dtw_similarity(seq1, seq1)
+    sim2 = dtw_similarity(seq1, seq2)
+    assert sim2 < sim1
 
 
