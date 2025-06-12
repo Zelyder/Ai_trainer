@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import threading
+import queue
 
 
 def normalize_skeleton(skel):
@@ -224,6 +225,28 @@ engine = None
 spoken = [False] * 5
 last_recs = np.array([0.0] * 5, dtype=np.float32)
 
+# --- background inference worker ---
+_infer_queue = queue.Queue()
+_infer_worker_started = False
+
+
+def _inference_worker():
+    while True:
+        model, tensor, callback = _infer_queue.get()
+        try:
+            with torch.no_grad():
+                output = model(tensor)
+            callback(output.cpu())
+        finally:
+            _infer_queue.task_done()
+
+
+def _ensure_infer_worker():
+    global _infer_worker_started
+    if not _infer_worker_started:
+        threading.Thread(target=_inference_worker, daemon=True).start()
+        _infer_worker_started = True
+
 
 def compute_reference_angles(X):
     all_angles = []
@@ -310,12 +333,9 @@ def speak(angs, ref, recs, thr=15):
 
 
 def infer_async(model, input_tensor, callback):
-    def worker():
-        with torch.no_grad():
-            output = model(input_tensor)
-        callback(output.cpu())
-
-    threading.Thread(target=worker, daemon=True).start()
+    """Enqueue an inference request processed by a background worker."""
+    _ensure_infer_worker()
+    _infer_queue.put((model, input_tensor, callback))
 
 
 # -- инициализация моделей --
