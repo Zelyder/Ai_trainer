@@ -208,11 +208,10 @@ ANGLE_TOLERANCE = 15
 def run_camera_with_reference(reference, ref_frames, ref_points):
     global ANGLE_TOLERANCE
     cap = cv2.VideoCapture(0)
-
+    # Create the main window and a trackbar for adjusting tolerance
     win_name = 'AI trainer'
     cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(win_name, 1280, 720)
-    # Create the main window and a trackbar for adjusting tolerance
 
     def on_trackbar(val):
         """Callback updating the global tolerance value."""
