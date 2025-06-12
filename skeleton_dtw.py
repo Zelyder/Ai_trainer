@@ -59,3 +59,15 @@ def dtw_skeletons(seq1, seq2, w_euc=1.0, w_ang=1.0):
     path.reverse()
 
     return D[n][m], path
+
+
+def dtw_similarity(seq1, seq2, w_euc=1.0, w_ang=1.0):
+    """Return normalized similarity score for two skeleton sequences.
+
+    The value is ``1`` for identical sequences and decreases as the
+    sequences diverge. It is computed from the DTW distance using a
+    simple ``1 / (1 + distance)`` transformation.
+    """
+
+    dist, _ = dtw_skeletons(seq1, seq2, w_euc=w_euc, w_ang=w_ang)
+    return 1.0 / (1.0 + dist)
