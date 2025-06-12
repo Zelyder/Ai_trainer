@@ -45,4 +45,12 @@ Some scripts in the repository contain additional utilities for preprocessing da
 ## Models
 
 `pose_lstm.py` provides a minimal LSTM classifier implemented in PyTorch. It accepts a sequence of pose features and predicts three categories: correct execution, error A and error B.
+=======
+## Exercise recommendations
+
+The helper function `generate_recommendations` in `format.py` analyzes several
+joint angles between the user's pose and a reference pose. It now covers elbows,
+knees, shoulders and hips, returning a textual hint whenever an angle differs by
+more than 10 degrees.
+
 
