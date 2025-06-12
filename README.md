@@ -38,7 +38,7 @@ The simplest demo can be launched with:
 python ai2.py
 ```
 
-After starting the program select a reference video (e.g. `source.mp4`) when prompted. The webcam feed will be compared against the reference, recommendations will be displayed on the screen and voiced via `pyttsx3`.
+After starting the program select a reference video (e.g. `source.mp4`) when prompted. The webcam feed will be compared against the reference, recommendations will be displayed on the screen and voiced via `pyttsx3`.  Use the **Tolerance** slider in the window to adjust the acceptable angle deviation (default is 15 degrees).
 
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
 
