@@ -15,17 +15,20 @@ ANGLE_POINTS = [
 
 
 def calculate_angle(a, b, c):
-    """Calculate the angle (in degrees) formed by three points."""
+    """Return the joint angle ABC in degrees using the dot product."""
     a = np.array(a)
     b = np.array(b)
     c = np.array(c)
 
-    radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - \
-              np.arctan2(a[1] - b[1], a[0] - b[0])
-    angle = np.abs(radians * 180.0 / np.pi)
-    if angle > 180.0:
-        angle = 360 - angle
-    return angle
+    ba = a - b
+    bc = c - b
+
+    denom = np.linalg.norm(ba) * np.linalg.norm(bc)
+    if denom == 0:
+        return 0.0
+    cos_angle = np.dot(ba, bc) / denom
+    angle = np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
+    return float(angle)
 
 
 def generate_recommendations(ideal_pose, real_pose):
