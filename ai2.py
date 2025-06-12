@@ -8,7 +8,17 @@ import torch.nn as nn
 import threading
 import pyttsx3
 from PIL import Image, ImageDraw, ImageFont
+from functools import lru_cache
 import format
+
+
+@lru_cache(maxsize=None)
+def get_font(size=20):
+    """Return a cached PIL ``ImageFont`` instance."""
+    try:
+        return ImageFont.truetype("arial.ttf", size)
+    except IOError:
+        return ImageFont.load_default()
 
 try:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -122,20 +132,18 @@ def draw_info(frame, angs, ref, recs):
     return frame
 
 def draw_text_pil(image, text, pos, font_size=20, color=(255, 255, 255)):
-    """Рисует кириллический текст поверх изображения OpenCV с хорошей читаемостью."""
-    # Преобразуем изображение в формат PIL
-    img_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    draw = ImageDraw.Draw(img_pil)
-    try:
-        # Используем системный шрифт с поддержкой кириллицы (Windows/Linux)
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except IOError:
-        # Запасной шрифт (можно указать путь к TTF-файлу вручную)
-        font = ImageFont.load_default()
-    draw.text(pos, text, font=font, fill=color,
-              stroke_width=2, stroke_fill=(0, 0, 0))
-    # Обратно в OpenCV
-    return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+    """Draw Cyrillic text on a BGR ``ndarray`` or ``PIL.Image``."""
+    if isinstance(image, np.ndarray):
+        img_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        draw = ImageDraw.Draw(img_pil)
+        draw.text(pos, text, font=get_font(font_size), fill=color,
+                  stroke_width=2, stroke_fill=(0, 0, 0))
+        return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+    else:
+        draw = ImageDraw.Draw(image)
+        draw.text(pos, text, font=get_font(font_size), fill=color,
+                  stroke_width=2, stroke_fill=(0, 0, 0))
+        return image
 
 
 def draw_two_skeletons(frame, ref_pts, user_pts, connections=None,
@@ -253,13 +261,16 @@ def run_camera_with_reference(reference, ref_frames, ref_points):
             hints = speak(pts, ref_pts)
             recs = last_recs
             frame = draw_info(frame, angs, ref_ang, recs)
+
+            img_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             for i, msg in enumerate(hints):
-                frame = draw_text_pil(frame, msg, (10, 180 + i * 25), font_size=20, color=(255, 0, 0))
+                draw_text_pil(img_pil, msg, (10, 180 + i * 25), font_size=20, color=(255, 0, 0))
             similarity = max(0.0, 1.0 - np.mean(np.abs(angs - ref_ang)) / 90.0)
 
             # Отображаем схожесть и текущий порог
-            frame = draw_text_pil(frame, f'Сходство: {similarity*100:.1f}%', (10, 310), font_size=20)
-            frame = draw_text_pil(frame, f'Допустимое отклонение: {ANGLE_TOLERANCE}°', (10, 340), font_size=20)
+            draw_text_pil(img_pil, f'Сходство: {similarity*100:.1f}%', (10, 310), font_size=20)
+            draw_text_pil(img_pil, f'Допустимое отклонение: {ANGLE_TOLERANCE}°', (10, 340), font_size=20)
+            frame = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
             frame = cv2.resize(frame, (480, 360))
             ref_frame = cv2.resize(ref_frame, (480, 360))
