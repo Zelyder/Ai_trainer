@@ -1,4 +1,6 @@
 import numpy as np
+from dataclasses import dataclass
+from typing import Any
 
 # Pairs of keypoint indices used for angle-based feedback. Indices follow
 # the MediaPipe pose specification.
@@ -14,21 +16,59 @@ ANGLE_POINTS = [
 ]
 
 
+@dataclass
+class FrameFeatures:
+    """Container for features extracted from a single pose frame."""
+
+    angles: Any
+    normalized_points: Any
+
+
+def normalize_pose(pose,
+                   hip_left: int = 23,
+                   hip_right: int = 24,
+                   shoulder_left: int = 11,
+                   shoulder_right: int = 12):
+    """Normalize coordinates relative to pelvis and scale by shoulder width."""
+
+    arr = np.asarray(pose, dtype=np.float32)
+    if arr.ndim != 2 or arr.shape[1] < 2:
+        raise ValueError("pose must have shape (V, 2)")
+
+    pelvis = (arr[hip_left] + arr[hip_right]) / 2.0
+    arr = arr - pelvis
+
+    scale = np.linalg.norm(arr[shoulder_left] - arr[shoulder_right])
+    if scale > 0:
+        arr = arr / scale
+
+    return arr
+
+
+def build_frame_features(pose) -> FrameFeatures:
+    """Return joint angles and normalized coordinates for a pose frame."""
+
+    normalized = normalize_pose(pose)
+    angles = np.array(
+        [calculate_angle(normalized[i], normalized[j], normalized[k])
+         for i, j, k in ANGLE_POINTS],
+        dtype=np.float32,
+    )
+    return FrameFeatures(angles=angles, normalized_points=normalized)
+
+
 def calculate_angle(a, b, c):
-    """Return the joint angle ABC in degrees using the dot product."""
+    """Calculate the angle (in degrees) formed by three points."""
     a = np.array(a)
     b = np.array(b)
     c = np.array(c)
 
-    ba = a - b
-    bc = c - b
-
-    denom = np.linalg.norm(ba) * np.linalg.norm(bc)
-    if denom == 0:
-        return 0.0
-    cos_angle = np.dot(ba, bc) / denom
-    angle = np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
-    return float(angle)
+    radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - \
+              np.arctan2(a[1] - b[1], a[0] - b[0])
+    angle = np.abs(radians * 180.0 / np.pi)
+    if angle > 180.0:
+        angle = 360 - angle
+    return angle
 
 
 def generate_recommendations(ideal_pose, real_pose):
