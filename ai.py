@@ -144,6 +144,8 @@ def main():
     reference = extract_reference_from_video("source.mp4", max_frames=100)
 
     cap = cv2.VideoCapture(0)
+    cv2.namedWindow('Feedback', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Feedback', 1280, 720)
     seq = []
     max_len = reference.shape[0]
 
