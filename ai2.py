@@ -199,6 +199,8 @@ ANGLE_TOLERANCE = 15
 def run_camera_with_reference(reference, ref_frames, ref_points):
     global ANGLE_TOLERANCE
     cap = cv2.VideoCapture(0)
+    cv2.namedWindow('AI trainer', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('AI trainer', 1280, 720)
     seq = []
     net = RecommendationNet(input_size=4).to(device)
     ref_len = len(reference)
