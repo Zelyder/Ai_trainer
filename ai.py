@@ -139,8 +139,8 @@ def main():
     pose = mp_pose.Pose()
     engine = pyttsx3.init()
     engine.setProperty('rate', 150)
-    clf = LSTMClassifier(input_size=4)
-    rec_net = RecommendationNet(input_size=4)
+    clf = LSTMClassifier(input_size=4).to(device)
+    rec_net = RecommendationNet(input_size=4).to(device)
 
     reference = extract_reference_from_video("source.mp4", max_frames=100)
 
@@ -160,10 +160,17 @@ def main():
             if len(seq) > max_len:
                 seq.pop(0)
             ref_ang = reference[len(seq) - 1]
-            inp = torch.tensor(np.abs(angs - ref_ang), dtype=torch.float32)
-            recs = rec_net(inp).detach().numpy()
-            speak(angs, ref_ang, recs)
-            frame = draw_info(frame, angs, ref_ang, recs)
+            inp = torch.tensor(np.abs(angs - ref_ang),
+                               dtype=torch.float32, device=device)
+
+            def cb(out, a=angs, r=ref_ang):
+                recs = out.numpy()
+                speak(a, r, recs)
+                global last_recs
+                last_recs = recs
+
+            infer_async(rec_net, inp, cb)
+            frame = draw_info(frame, angs, ref_ang, last_recs)
 
         cv2.imshow('Feedback', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -178,6 +185,11 @@ import mediapipe as mp
 import torch
 import torch.nn as nn
 import pyttsx3
+
+try:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+except Exception:
+    device = "cpu"
 
 
 # -- модели --
@@ -209,6 +221,7 @@ mp_pose = mp.solutions.pose
 pose = None
 engine = None
 spoken = [False] * 5
+last_recs = np.array([0.0] * 5, dtype=np.float32)
 
 
 def compute_reference_angles(X):
@@ -285,6 +298,15 @@ def speak(angs, ref, recs, thr=15):
             spoken[i] = True
         elif dev <= thr:
             spoken[i] = False  # разрешаем повторную озвучку при следующем нарушении
+
+
+def infer_async(model, input_tensor, callback):
+    def worker():
+        with torch.no_grad():
+            output = model(input_tensor)
+        callback(output.cpu())
+
+    threading.Thread(target=worker, daemon=True).start()
 
 
 # -- инициализация моделей --

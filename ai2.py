@@ -9,6 +9,11 @@ import threading
 import pyttsx3
 from PIL import Image, ImageDraw, ImageFont
 
+try:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+except Exception:
+    device = "cpu"
+
 # === Модели ===
 class RecommendationNet(nn.Module):
     def __init__(self, input_size=4):
@@ -36,6 +41,7 @@ pose = mp_pose.Pose()
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)
 spoken = [False]*4
+last_recs = np.array([0.0] * 5, dtype=np.float32)
 
 def speak_async(msg):
     def worker():
@@ -52,6 +58,15 @@ def speak(angs, ref, thr=15):
             spoken[i] = True
         elif dev <= thr:
             spoken[i] = False
+
+
+def infer_async(model, input_tensor, callback):
+    def worker():
+        with torch.no_grad():
+            output = model(input_tensor)
+        callback(output.cpu())
+
+    threading.Thread(target=worker, daemon=True).start()
 
 # === Ключевые точки ===
 def extract_keypoints(frame, pose_model=None):
@@ -180,7 +195,7 @@ def run_camera_with_reference(reference, ref_frames):
     global ANGLE_TOLERANCE
     cap = cv2.VideoCapture(0)
     seq = []
-    net = RecommendationNet(input_size=4)
+    net = RecommendationNet(input_size=4).to(device)
     ref_len = len(reference)
     idx = 0
 
@@ -200,12 +215,19 @@ def run_camera_with_reference(reference, ref_frames):
             ref_frame = ref_frames[idx % ref_len]
             idx += 1
 
-            inp = torch.tensor(np.abs(angs - ref_ang), dtype=torch.float32)
-            recs = net(inp).detach().numpy()
-            speak(angs, ref_ang, thr=ANGLE_TOLERANCE)
+            inp = torch.tensor(np.abs(angs - ref_ang),
+                               dtype=torch.float32, device=device)
 
-            similarity = max(0.0, 1.0 - np.mean(np.abs(angs - ref_ang)) / 90.0)
+            def cb(out, a=angs, r=ref_ang):
+                recs = out.numpy()
+                speak(a, r, thr=ANGLE_TOLERANCE)
+                global last_recs
+                last_recs = recs
+
+            infer_async(net, inp, cb)
+            recs = last_recs
             frame = draw_info(frame, angs, ref_ang, recs)
+            similarity = max(0.0, 1.0 - np.mean(np.abs(angs - ref_ang)) / 90.0)
 
             # Отображаем схожесть и текущий порог
             frame = draw_text_pil(frame, f'Сходство: {similarity*100:.1f}%', (10, 310), font_size=20)
