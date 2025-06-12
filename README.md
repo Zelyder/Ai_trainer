@@ -42,3 +42,7 @@ After starting the program select a reference video (e.g. `source.mp4`) when pro
 
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
 
+## Models
+
+`pose_lstm.py` provides a minimal LSTM classifier implemented in PyTorch. It accepts a sequence of pose features and predicts three categories: correct execution, error A and error B.
+
