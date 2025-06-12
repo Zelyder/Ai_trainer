@@ -116,6 +116,7 @@ def test_calc_angles_ntu():
     assert all(abs(a - b) < 1.0 for a, b in zip(angles, expected))
 
 
+
 def test_movement_accuracy():
     metric = format.movement_accuracy(0.0, 0.0)
     assert metric == 1.0
@@ -125,3 +126,56 @@ def test_movement_accuracy():
 
     metric = format.movement_accuracy(0.5, 90.0)
     assert abs(metric - 0.5) < 1e-6
+
+rules_spec = importlib.util.spec_from_file_location('rules', Path(__file__).resolve().parents[1] / 'rules.py')
+rules = importlib.util.module_from_spec(rules_spec)
+rules_spec.loader.exec_module(rules)
+
+
+def test_check_joint_angle_rules():
+    angles = [180, 175, 30, 170]
+    msgs = rules.check_joint_angle_rules(angles)
+    expected = [
+        "Недостаточно согнут левый локоть",
+        "Недостаточно согнут правый локоть",
+        "Слишком согнуто левое колено",
+        "Недостаточно согнуто правое колено",
+    ]
+    assert msgs == expected
+
+
+def test_generate_recommendations_extended():
+    np = sys.modules['numpy']
+    base_ideal = np.zeros((29, 2))
+    base_real = np.zeros((29, 2))
+    for i, j, k in format.ANGLE_POINTS:
+        base_ideal[i] = np.array([1, 0])
+        base_ideal[j] = np.array([0, 0])
+        base_ideal[k] = np.array([0, 1])
+        base_real[i] = np.array([1, 0])
+        base_real[j] = np.array([0, 0])
+        base_real[k] = np.array([0, 1])
+
+    messages = {
+        (11, 13, 15): "Выпрямьте левый локоть",
+        (12, 14, 16): "Выпрямьте правый локоть",
+        (23, 25, 27): "Сгибайте левое колено",
+        (24, 26, 28): "Сгибайте правое колено",
+        (14, 12, 24): "Держите правое плечо ровно",
+        (13, 11, 23): "Держите левое плечо ровно",
+        (12, 24, 26): "Не отклоняйте правый таз",
+        (11, 23, 25): "Не отклоняйте левый таз",
+    }
+
+    for triple in format.ANGLE_POINTS:
+        ideal = [row[:] for row in base_ideal]
+        real = [row[:] for row in base_real]
+        i, j, k = triple
+        real[k] = np.array([1, 0])  # distort one joint
+
+        recs = format.generate_recommendations(ideal, real)
+        # Expect at least one hint about the changed joint
+        hint = messages[triple]
+        assert any(hint in r for r in recs)
+
+
