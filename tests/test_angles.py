@@ -114,3 +114,19 @@ def test_calc_angles_ntu():
     angles = ai2.calc_angles_ntu(pts)
     expected = [90, 180, 180, 90]
     assert all(abs(a - b) < 1.0 for a, b in zip(angles, expected))
+
+rules_spec = importlib.util.spec_from_file_location('rules', Path(__file__).resolve().parents[1] / 'rules.py')
+rules = importlib.util.module_from_spec(rules_spec)
+rules_spec.loader.exec_module(rules)
+
+
+def test_check_joint_angle_rules():
+    angles = [180, 175, 30, 170]
+    msgs = rules.check_joint_angle_rules(angles)
+    expected = [
+        "Недостаточно согнут левый локоть",
+        "Недостаточно согнут правый локоть",
+        "Слишком согнуто левое колено",
+        "Недостаточно согнуто правое колено",
+    ]
+    assert msgs == expected
