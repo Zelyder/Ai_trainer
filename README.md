@@ -42,3 +42,16 @@ After starting the program select a reference video (e.g. `source.mp4`) when pro
 
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
 
+
+## LSTM Training Example
+
+A simple example of training an LSTM classifier on random data is provided in
+`lstm_train.py`. It shows how to track validation accuracy and plot training
+curves:
+
+```bash
+python lstm_train.py
+```
+
+The script writes validation accuracy values to `val_accuracy.txt` and saves
+`loss.png` and `accuracy.png` with the corresponding graphs.
