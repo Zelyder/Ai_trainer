@@ -17,6 +17,50 @@ def normalize_skeleton(skel):
     return skel
 
 
+def normalize_by_pelvis_scale(skel,
+                              hip_left=23,
+                              hip_right=24,
+                              shoulder_left=11,
+                              shoulder_right=12):
+    """Normalize skeleton coordinates relative to pelvis center and scale.
+
+    Parameters
+    ----------
+    skel : np.ndarray
+        Array of shape ``(T, V, C)`` or ``(V, C)`` containing coordinates.
+    hip_left, hip_right : int
+        Indices of the hip joints used to compute the pelvis center.
+    shoulder_left, shoulder_right : int
+        Indices of the shoulder joints used to compute the scale.
+
+    Returns
+    -------
+    np.ndarray
+        Normalized skeleton with the same shape as the input.
+    """
+
+    arr = np.asarray(skel, dtype=np.float32)
+    single_frame = False
+    if arr.ndim == 2:
+        arr = arr[None, ...]
+        single_frame = True
+
+    T, V, C = arr.shape
+    pelvis = (arr[:, hip_left, :] + arr[:, hip_right, :]) / 2.0
+    arr = arr - pelvis[:, None, :]
+
+    shoulder_dist = np.linalg.norm(
+        arr[:, shoulder_left, :] - arr[:, shoulder_right, :], axis=-1
+    )
+    scale = np.mean(shoulder_dist)
+    if scale > 0:
+        arr /= scale
+
+    if single_frame:
+        arr = arr[0]
+    return arr
+
+
 def load_and_clean(path_pkl, max_frames=100, max_samples=1000):
     with open(path_pkl, 'rb') as f:
         raw = pickle.load(f)
