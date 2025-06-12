@@ -8,6 +8,7 @@ import torch.nn as nn
 import threading
 import pyttsx3
 from PIL import Image, ImageDraw, ImageFont
+import format
 
 try:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -40,7 +41,7 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)
-spoken = [False]*4
+spoken_hints = set()
 last_recs = np.array([0.0] * 5, dtype=np.float32)
 
 def speak_async(msg):
@@ -49,15 +50,17 @@ def speak_async(msg):
         engine.runAndWait()
     threading.Thread(target=worker, daemon=True).start()
 
-def speak(angs, ref, thr=15):
-    msgs = ["Выпрямьте левый локоть", "Выпрямьте правый локоть",
-            "Сгибайте левое колено", "Сгибайте правое колено"]
-    for i, dev in enumerate(np.abs(angs - ref)):
-        if dev > thr and not spoken[i]:
-            speak_async(msgs[i])
-            spoken[i] = True
-        elif dev <= thr:
-            spoken[i] = False
+def speak(user_pts, ref_pts):
+    """Generate and voice hints using ``format.generate_recommendations``."""
+    hints = format.generate_recommendations(ref_pts, user_pts)
+    global spoken_hints
+    new_spoken = set()
+    for msg in hints:
+        if msg not in spoken_hints:
+            speak_async(msg)
+        new_spoken.add(msg)
+    spoken_hints = new_spoken
+    return hints
 
 
 def infer_async(model, input_tensor, callback):
@@ -82,6 +85,7 @@ def extract_reference_from_video(video_path, max_frames=1000):
     cap = cv2.VideoCapture(video_path)
     angles_seq = []
     frames_seq = []
+    keypoints_seq = []
     with mp_pose.Pose(static_image_mode=False) as pose_ref:
         while len(angles_seq) < max_frames:
             ret, frame = cap.read()
@@ -92,10 +96,11 @@ def extract_reference_from_video(video_path, max_frames=1000):
                 angles = calc_angles_ntu(pts)
                 angles_seq.append(angles)
                 frames_seq.append(cv2.resize(frame, (320, 240)))
+                keypoints_seq.append(pts)
     cap.release()
     if len(angles_seq) == 0:
         raise ValueError("Не удалось извлечь ключевые точки из видео")
-    return np.array(angles_seq), frames_seq
+    return np.array(angles_seq), frames_seq, keypoints_seq
 
 # === Отображение инфо ===
 def draw_info(frame, angs, ref, recs):
@@ -184,14 +189,14 @@ def load_video_and_run():
         return
 
     print("Извлекаем эталонные углы...")
-    reference_angles, reference_frames = extract_reference_from_video(video_path)
+    reference_angles, reference_frames, reference_points = extract_reference_from_video(video_path)
     print(f"Готово: {len(reference_angles)} кадров.")
 
-    run_camera_with_reference(reference_angles, reference_frames)
+    run_camera_with_reference(reference_angles, reference_frames, reference_points)
 
 # === Главный цикл ===
 ANGLE_TOLERANCE = 15
-def run_camera_with_reference(reference, ref_frames):
+def run_camera_with_reference(reference, ref_frames, ref_points):
     global ANGLE_TOLERANCE
     cap = cv2.VideoCapture(0)
     seq = []
@@ -213,20 +218,23 @@ def run_camera_with_reference(reference, ref_frames):
 
             ref_ang = reference[idx % ref_len]
             ref_frame = ref_frames[idx % ref_len]
+            ref_pts = ref_points[idx % ref_len]
             idx += 1
 
             inp = torch.tensor(np.abs(angs - ref_ang),
                                dtype=torch.float32, device=device)
 
-            def cb(out, a=angs, r=ref_ang):
+            def cb(out):
                 recs = out.numpy()
-                speak(a, r, thr=ANGLE_TOLERANCE)
                 global last_recs
                 last_recs = recs
 
             infer_async(net, inp, cb)
+            hints = speak(pts, ref_pts)
             recs = last_recs
             frame = draw_info(frame, angs, ref_ang, recs)
+            for i, msg in enumerate(hints):
+                frame = draw_text_pil(frame, msg, (10, 180 + i * 25), font_size=20, color=(255, 0, 0))
             similarity = max(0.0, 1.0 - np.mean(np.abs(angs - ref_ang)) / 90.0)
 
             # Отображаем схожесть и текущий порог
