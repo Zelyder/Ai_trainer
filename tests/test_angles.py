@@ -116,6 +116,17 @@ def test_calc_angles_ntu():
     assert all(abs(a - b) < 1.0 for a, b in zip(angles, expected))
 
 
+
+def test_movement_accuracy():
+    metric = format.movement_accuracy(0.0, 0.0)
+    assert metric == 1.0
+
+    metric = format.movement_accuracy(1.0, 180.0)
+    assert metric == 0.0
+
+    metric = format.movement_accuracy(0.5, 90.0)
+    assert abs(metric - 0.5) < 1e-6
+
 rules_spec = importlib.util.spec_from_file_location('rules', Path(__file__).resolve().parents[1] / 'rules.py')
 rules = importlib.util.module_from_spec(rules_spec)
 rules_spec.loader.exec_module(rules)
@@ -166,4 +177,5 @@ def test_generate_recommendations_extended():
         # Expect at least one hint about the changed joint
         hint = messages[triple]
         assert any(hint in r for r in recs)
+
 
