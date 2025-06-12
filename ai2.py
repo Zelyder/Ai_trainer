@@ -199,6 +199,16 @@ ANGLE_TOLERANCE = 15
 def run_camera_with_reference(reference, ref_frames, ref_points):
     global ANGLE_TOLERANCE
     cap = cv2.VideoCapture(0)
+    # Create the main window and a trackbar for adjusting tolerance
+    win_name = 'AI trainer'
+    cv2.namedWindow(win_name)
+
+    def on_trackbar(val):
+        """Callback updating the global tolerance value."""
+        global ANGLE_TOLERANCE
+        ANGLE_TOLERANCE = max(1, int(val))
+
+    cv2.createTrackbar('Tolerance', win_name, ANGLE_TOLERANCE, 45, on_trackbar)
     seq = []
     net = RecommendationNet(input_size=4).to(device)
     ref_len = len(reference)
@@ -244,15 +254,17 @@ def run_camera_with_reference(reference, ref_frames, ref_points):
             frame = cv2.resize(frame, (480, 360))
             ref_frame = cv2.resize(ref_frame, (480, 360))
             combo = np.hstack([frame, ref_frame])
-            cv2.imshow('AI trainer', combo)
+            cv2.imshow(win_name, combo)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
             break
         elif key == ord('+') or key == ord('='):
             ANGLE_TOLERANCE += 1
+            cv2.setTrackbarPos('Tolerance', win_name, ANGLE_TOLERANCE)
         elif key == ord('-') and ANGLE_TOLERANCE > 1:
             ANGLE_TOLERANCE -= 1
+            cv2.setTrackbarPos('Tolerance', win_name, ANGLE_TOLERANCE)
 
     cap.release()
     cv2.destroyAllWindows()
