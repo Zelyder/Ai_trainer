@@ -42,3 +42,14 @@ After starting the program select a reference video (e.g. `source.mp4`) when pro
 
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
 
+## Simple console analysis
+
+To analyse a prerecorded video without using the webcam run:
+
+```bash
+python cli_app.py path/to/video.mp4
+```
+
+The script will print the average deviation of four basic joint angles relative
+to the first frame and display a graph with the deviation dynamics.
+
