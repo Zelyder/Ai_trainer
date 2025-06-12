@@ -52,8 +52,21 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)
+speech_queue = queue.Queue()
 spoken_hints = set()
 last_recs = np.array([0.0] * 5, dtype=np.float32)
+
+# --- background speech worker ---
+def _speech_worker():
+    while True:
+        msg = speech_queue.get()
+        try:
+            engine.say(msg)
+            engine.runAndWait()
+        finally:
+            speech_queue.task_done()
+
+threading.Thread(target=_speech_worker, daemon=True).start()
 
 # --- background inference worker ---
 _infer_queue = queue.Queue()
@@ -78,10 +91,8 @@ def _ensure_infer_worker():
         _infer_worker_started = True
 
 def speak_async(msg):
-    def worker():
-        engine.say(msg)
-        engine.runAndWait()
-    threading.Thread(target=worker, daemon=True).start()
+    """Queue a message for the speech worker."""
+    speech_queue.put(msg)
 
 def speak(user_pts, ref_pts):
     """Generate and voice hints using ``format.generate_recommendations``."""
