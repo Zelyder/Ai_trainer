@@ -80,4 +80,26 @@ knees, shoulders and hips.  Pass a ``tolerance`` value (in degrees) to control
 how much deviation is allowed before a textual hint is returned.  When no
 tolerance is supplied the default of 10 degrees is used.
 
+## DTW-based pose comparison
+
+`pipeline.py` can compare two videos frame by frame using Dynamic Time Warping
+(DTW).  The script extracts the skeleton sequence from each video and prints a
+DTW similarity score.  Lower values mean the movements are closer together,
+with a perfect match resulting in `0`.
+
+Run the pipeline from the command line:
+
+```bash
+python pipeline.py reference.mp4 session.mp4
+```
+
+Or call the function directly from Python:
+
+```python
+from pipeline import run_pipeline
+
+run_pipeline("reference.mp4", "session.mp4")
+```
+
+
 
