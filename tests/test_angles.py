@@ -114,3 +114,38 @@ def test_calc_angles_ntu():
     angles = ai2.calc_angles_ntu(pts)
     expected = [90, 180, 180, 90]
     assert all(abs(a - b) < 1.0 for a, b in zip(angles, expected))
+
+
+def test_generate_recommendations_extended():
+    np = sys.modules['numpy']
+    base_ideal = np.zeros((29, 2))
+    base_real = np.zeros((29, 2))
+    for i, j, k in format.ANGLE_POINTS:
+        base_ideal[i] = np.array([1, 0])
+        base_ideal[j] = np.array([0, 0])
+        base_ideal[k] = np.array([0, 1])
+        base_real[i] = np.array([1, 0])
+        base_real[j] = np.array([0, 0])
+        base_real[k] = np.array([0, 1])
+
+    messages = {
+        (11, 13, 15): "Выпрямьте левый локоть",
+        (12, 14, 16): "Выпрямьте правый локоть",
+        (23, 25, 27): "Сгибайте левое колено",
+        (24, 26, 28): "Сгибайте правое колено",
+        (14, 12, 24): "Держите правое плечо ровно",
+        (13, 11, 23): "Держите левое плечо ровно",
+        (12, 24, 26): "Не отклоняйте правый таз",
+        (11, 23, 25): "Не отклоняйте левый таз",
+    }
+
+    for triple in format.ANGLE_POINTS:
+        ideal = [row[:] for row in base_ideal]
+        real = [row[:] for row in base_real]
+        i, j, k = triple
+        real[k] = np.array([1, 0])  # distort one joint
+
+        recs = format.generate_recommendations(ideal, real)
+        # Expect at least one hint about the changed joint
+        hint = messages[triple]
+        assert any(hint in r for r in recs)

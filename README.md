@@ -43,6 +43,7 @@ After starting the program select a reference video (e.g. `source.mp4`) when pro
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
 
 
+
 ## LSTM Training Example
 
 A simple example of training an LSTM classifier on random data is provided in
@@ -55,3 +56,16 @@ python lstm_train.py
 
 The script writes validation accuracy values to `val_accuracy.txt` and saves
 `loss.png` and `accuracy.png` with the corresponding graphs.
+=======
+## Models
+
+`pose_lstm.py` provides a minimal LSTM classifier implemented in PyTorch. It accepts a sequence of pose features and predicts three categories: correct execution, error A and error B.
+=======
+## Exercise recommendations
+
+The helper function `generate_recommendations` in `format.py` analyzes several
+joint angles between the user's pose and a reference pose. It now covers elbows,
+knees, shoulders and hips, returning a textual hint whenever an angle differs by
+more than 10 degrees.
+
+
