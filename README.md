@@ -42,6 +42,17 @@ After starting the program select a reference video (e.g. `source.mp4`) when pro
 
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
 
+## Simple console analysis
+
+To analyse a prerecorded video without using the webcam run:
+
+```bash
+python cli_app.py path/to/video.mp4
+```
+
+The script will print the average deviation of four basic joint angles relative
+to the first frame and display a graph with the deviation dynamics.
+
 
 
 ## LSTM Training Example
@@ -56,11 +67,11 @@ python lstm_train.py
 
 The script writes validation accuracy values to `val_accuracy.txt` and saves
 `loss.png` and `accuracy.png` with the corresponding graphs.
-=======
+
 ## Models
 
 `pose_lstm.py` provides a minimal LSTM classifier implemented in PyTorch. It accepts a sequence of pose features and predicts three categories: correct execution, error A and error B.
-=======
+
 ## Exercise recommendations
 
 The helper function `generate_recommendations` in `format.py` analyzes several
