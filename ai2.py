@@ -103,18 +103,26 @@ def extract_reference_from_video(video_path, max_frames=1000):
     return np.array(angles_seq), frames_seq, keypoints_seq
 
 # === Отображение инфо ===
+def put_text(img, text, pos, color=(255, 255, 255), font_scale=0.6, thickness=1):
+    """Draw readable text with a black outline."""
+    cv2.putText(img, text, pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale,
+                (0, 0, 0), thickness + 2, cv2.LINE_AA)
+    cv2.putText(img, text, pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale,
+                color, thickness, cv2.LINE_AA)
+
+
 def draw_info(frame, angs, ref, recs):
     for i, (a, r) in enumerate(zip(angs, ref)):
         dev = abs(a - r)
-        cv2.putText(frame, f'#{i+1}: {a:.1f} Δ{dev:.1f}',
-                    (10, 30 + i * 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        put_text(frame, f'#{i+1}: {a:.1f} Δ{dev:.1f}',
+                 (10, 30 + i * 25), color=(0, 255, 0))
     for i, rec in enumerate(recs):
-        cv2.putText(frame, f'R{i+1}:{rec:.2f}',
-                    (10, 150 + i * 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+        put_text(frame, f'R{i+1}:{rec:.2f}',
+                 (10, 170 + i * 25), color=(255, 0, 0))
     return frame
 
 def draw_text_pil(image, text, pos, font_size=20, color=(255, 255, 255)):
-    """Рисует кириллический текст поверх изображения OpenCV с помощью PIL"""
+    """Рисует кириллический текст поверх изображения OpenCV с хорошей читаемостью."""
     # Преобразуем изображение в формат PIL
     img_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img_pil)
@@ -124,7 +132,8 @@ def draw_text_pil(image, text, pos, font_size=20, color=(255, 255, 255)):
     except IOError:
         # Запасной шрифт (можно указать путь к TTF-файлу вручную)
         font = ImageFont.load_default()
-    draw.text(pos, text, font=font, fill=color)
+    draw.text(pos, text, font=font, fill=color,
+              stroke_width=2, stroke_fill=(0, 0, 0))
     # Обратно в OpenCV
     return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
