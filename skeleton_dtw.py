@@ -1,5 +1,12 @@
 import math
 
+__all__ = [
+    "calc_angles_ntu",
+    "skeleton_metric",
+    "dtw_skeletons",
+    "dtw_similarity",
+]
+
 
 def _euclidean(p, q):
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(p, q)))
@@ -59,3 +66,30 @@ def dtw_skeletons(seq1, seq2, w_euc=1.0, w_ang=1.0):
     path.reverse()
 
     return D[n][m], path
+
+
+def dtw_similarity(seq_ref, seq_user, *, w_euc=1.0, w_ang=1.0):
+    """Compute a similarity score between two skeleton sequences using DTW.
+
+    Parameters
+    ----------
+    seq_ref : sequence
+        Reference skeleton sequence.
+    seq_user : sequence
+        User skeleton sequence to compare against the reference.
+    w_euc : float, optional
+        Weight for the Euclidean component of the metric.
+    w_ang : float, optional
+        Weight for the angle component of the metric.
+
+    Returns
+    -------
+    tuple of (float, float)
+        ``(distance, similarity)`` where ``distance`` is the cumulative DTW
+        distance and ``similarity`` is a value in ``[0, 1]`` computed as
+        ``1 / (1 + distance)``.
+    """
+
+    distance, _ = dtw_skeletons(seq_ref, seq_user, w_euc=w_euc, w_ang=w_ang)
+    similarity = 1.0 / (1.0 + distance)
+    return distance, similarity

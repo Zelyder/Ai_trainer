@@ -6,6 +6,7 @@ import torch.nn as nn
 
 from ai import normalize_skeleton
 from format import generate_recommendations
+from skeleton_dtw import dtw_similarity
 
 
 class LSTMClassifier(nn.Module):
@@ -94,8 +95,9 @@ def run_pipeline(reference_video, target_video, model_path=None, tolerance=10):
     ref = normalize_skeleton(extract_skeletons(reference_video))
     seq = normalize_skeleton(extract_skeletons(target_video))
 
-    distance = dtw_distance(ref, seq)
+    distance, similarity = dtw_similarity(ref, seq)
     print(f"DTW distance: {distance:.4f}")
+    print(f"DTW similarity: {similarity:.4f}")
 
     model = None
     if model_path:
