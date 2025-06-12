@@ -1,7 +1,6 @@
 import numpy as np
 import pickle
 import threading
-from sklearn.preprocessing import MinMaxScaler
 
 
 def normalize_skeleton(skel):
