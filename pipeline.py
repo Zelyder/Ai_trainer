@@ -77,8 +77,20 @@ def classify_sequence(sequence, model):
         return int(out.argmax(dim=1).item())
 
 
-def run_pipeline(reference_video, target_video, model_path=None):
-    """Полный цикл обработки видео."""
+def run_pipeline(reference_video, target_video, model_path=None, tolerance=10):
+    """Полный цикл обработки видео.
+
+    Parameters
+    ----------
+    reference_video : str
+        Path to the reference video.
+    target_video : str
+        Path to the video to analyse.
+    model_path : str, optional
+        Path to a trained model.
+    tolerance : float, optional
+        Allowed deviation in degrees for ``generate_recommendations``.
+    """
     ref = normalize_skeleton(extract_skeletons(reference_video))
     seq = normalize_skeleton(extract_skeletons(target_video))
 
@@ -96,7 +108,7 @@ def run_pipeline(reference_video, target_video, model_path=None):
     error = evaluate_error(ref, seq)
     print(f"Average error: {error:.4f}")
 
-    recs = generate_recommendations(ref[-1], seq[-1])
+    recs = generate_recommendations(ref[-1], seq[-1], tolerance=tolerance)
     if recs:
         print("Recommendations:")
         for r in recs:
@@ -110,10 +122,11 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 3:
-        print("Usage: python pipeline.py <reference_video> <target_video> [model]")
+        print("Usage: python pipeline.py <reference_video> <target_video> [model] [tolerance]")
         sys.exit(1)
 
     ref_video = sys.argv[1]
     tar_video = sys.argv[2]
     mdl = sys.argv[3] if len(sys.argv) > 3 else None
-    run_pipeline(ref_video, tar_video, mdl)
+    tol = float(sys.argv[4]) if len(sys.argv) > 4 else 10
+    run_pipeline(ref_video, tar_video, mdl, tolerance=tol)

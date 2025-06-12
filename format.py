@@ -71,8 +71,19 @@ def calculate_angle(a, b, c):
     return angle
 
 
-def generate_recommendations(ideal_pose, real_pose):
-    """Return textual feedback for each joint angle that differs noticeably."""
+def generate_recommendations(ideal_pose, real_pose, tolerance: float = 10):
+    """Return textual feedback for each joint angle that differs noticeably.
+
+    Parameters
+    ----------
+    ideal_pose : array-like
+        Reference landmark coordinates.
+    real_pose : array-like
+        User landmark coordinates.
+    tolerance : float, optional
+        Maximum allowed deviation in degrees before a recommendation is
+        generated. Defaults to ``10``.
+    """
 
     messages = {
         (11, 13, 15): "Выпрямьте левый локоть",
@@ -89,7 +100,7 @@ def generate_recommendations(ideal_pose, real_pose):
     for i, j, k in ANGLE_POINTS:
         ideal_angle = calculate_angle(ideal_pose[i], ideal_pose[j], ideal_pose[k])
         real_angle = calculate_angle(real_pose[i], real_pose[j], real_pose[k])
-        if abs(ideal_angle - real_angle) > 10:
+        if abs(ideal_angle - real_angle) > tolerance:
             msg = messages.get((i, j, k), f"Корректируйте угол {i}-{j}-{k}")
             recommendations.append(
                 f"{msg}. Эталонный: {ideal_angle:.2f}, ваш: {real_angle:.2f}"

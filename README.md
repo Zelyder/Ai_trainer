@@ -38,7 +38,7 @@ The simplest demo can be launched with:
 python ai2.py
 ```
 
-After starting the program select a reference video (e.g. `source.mp4`) when prompted. The webcam feed will be compared against the reference, recommendations will be displayed on the screen and voiced via `pyttsx3`.  Use the **Tolerance** slider in the window to adjust the acceptable angle deviation (default is 15 degrees).
+After starting the program select a reference video (e.g. `source.mp4`) when prompted. The webcam feed will be compared against the reference, recommendations will be displayed on the screen and voiced via `pyttsx3`.  Use the **Tolerance** slider in the window to adjust the value passed to `generate_recommendations`.  The slider starts at 15 degrees by default.
 
 Some scripts in the repository contain additional utilities for preprocessing data (`ai.py`, `main.py`, etc.). Feel free to explore them for experiments.
 
@@ -75,8 +75,9 @@ The script writes validation accuracy values to `val_accuracy.txt` and saves
 ## Exercise recommendations
 
 The helper function `generate_recommendations` in `format.py` analyzes several
-joint angles between the user's pose and a reference pose. It now covers elbows,
-knees, shoulders and hips, returning a textual hint whenever an angle differs by
-more than 10 degrees.
+joint angles between the user's pose and a reference pose. It covers elbows,
+knees, shoulders and hips.  Pass a ``tolerance`` value (in degrees) to control
+how much deviation is allowed before a textual hint is returned.  When no
+tolerance is supplied the default of 10 degrees is used.
 
 
