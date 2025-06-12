@@ -108,6 +108,57 @@ def draw_text_pil(image, text, pos, font_size=20, color=(255, 255, 255)):
     # Обратно в OpenCV
     return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
+
+def draw_two_skeletons(frame, ref_pts, user_pts, connections=None,
+                       ref_color=(255, 0, 0), user_color=(0, 0, 255),
+                       radius=3, thickness=2):
+    """Overlay two pose skeletons on ``frame``.
+
+    Parameters
+    ----------
+    frame : ndarray
+        Image in BGR format where skeletons will be drawn.
+    ref_pts : array-like shape (N, 2)
+        Normalized landmark coordinates of the reference pose.
+    user_pts : array-like shape (N, 2)
+        Normalized landmark coordinates of the user's pose.
+    connections : iterable of tuple[int, int], optional
+        Pairs of landmark indices describing the skeleton edges.  When
+        ``None`` (default), ``mediapipe`` pose connections are used if
+        available.
+    ref_color : tuple[int, int, int]
+        BGR color for the reference skeleton (default blue).
+    user_color : tuple[int, int, int]
+        BGR color for the user skeleton (default red).
+    radius : int
+        Radius of drawn keypoints.
+    thickness : int
+        Thickness of connection lines.
+    """
+
+    h, w = frame.shape[:2]
+
+    if connections is None:
+        connections = getattr(mp_pose, 'POSE_CONNECTIONS', [])
+
+    def draw_one(points, color):
+        for i, j in connections:
+            if i >= len(points) or j >= len(points):
+                continue
+            p1 = (int(points[i][0] * w), int(points[i][1] * h))
+            p2 = (int(points[j][0] * w), int(points[j][1] * h))
+            cv2.line(frame, p1, p2, color, thickness)
+        for pt in points:
+            x, y = int(pt[0] * w), int(pt[1] * h)
+            cv2.circle(frame, (x, y), radius, color, -1)
+
+    if ref_pts is not None:
+        draw_one(ref_pts, ref_color)
+    if user_pts is not None:
+        draw_one(user_pts, user_color)
+
+    return frame
+
 # === Интерфейс загрузки ===
 def load_video_and_run():
     root = tk.Tk()
