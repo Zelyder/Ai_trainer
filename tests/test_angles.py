@@ -114,3 +114,14 @@ def test_calc_angles_ntu():
     angles = ai2.calc_angles_ntu(pts)
     expected = [90, 180, 180, 90]
     assert all(abs(a - b) < 1.0 for a, b in zip(angles, expected))
+
+
+def test_movement_accuracy():
+    metric = format.movement_accuracy(0.0, 0.0)
+    assert metric == 1.0
+
+    metric = format.movement_accuracy(1.0, 180.0)
+    assert metric == 0.0
+
+    metric = format.movement_accuracy(0.5, 90.0)
+    assert abs(metric - 0.5) < 1e-6
