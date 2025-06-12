@@ -6,14 +6,26 @@ from ai import load_and_clean
 
 
 def calc_angles_ntu(pts: np.ndarray) -> np.ndarray:
-    """Calculate 4 angles for NTU pose format."""
-    def ang(a, b, c):
-        v1, v2 = a - b, c - b
-        cos = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
-        return np.degrees(np.arccos(np.clip(cos, -1.0, 1.0)))
+    """Calculate four angles for NTU pose format using vectorized ops."""
 
-    idxs = [(5, 7, 9), (6, 8, 10), (11, 13, 15), (12, 14, 16)]
-    return np.array([ang(pts[i], pts[j], pts[k]) for i, j, k in idxs], dtype=np.float32)
+    idxs = np.array(
+        [
+            (5, 7, 9),
+            (6, 8, 10),
+            (11, 13, 15),
+            (12, 14, 16),
+        ]
+    )
+
+    triplets = pts[idxs]
+    a, b, c = triplets[:, 0], triplets[:, 1], triplets[:, 2]
+    v1 = a - b
+    v2 = c - b
+    dot = np.sum(v1 * v2, axis=1)
+    norm = np.linalg.norm(v1, axis=1) * np.linalg.norm(v2, axis=1) + 1e-6
+    cos = dot / norm
+    angles = np.degrees(np.arccos(np.clip(cos, -1.0, 1.0)))
+    return angles.astype(np.float32)
 
 
 def build_feature_sequences(X: np.ndarray) -> np.ndarray:

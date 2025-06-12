@@ -268,13 +268,26 @@ def extract_keypoints(frame, pose_model=None):
 
 
 def calc_angles(pts):
-    def ang(a, b, c):
-        v1, v2 = a - b, c - b
-        cos = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
-        return np.degrees(np.arccos(np.clip(cos, -1, 1)))
+    """Return four elbow/knee angles for MediaPipe pose."""
 
-    idxs = [(11, 13, 15), (12, 14, 16), (23, 25, 27), (24, 26, 28)]
-    return np.array([ang(pts[i], pts[j], pts[k]) for i, j, k in idxs], dtype=np.float32)
+    idxs = np.array(
+        [
+            (11, 13, 15),
+            (12, 14, 16),
+            (23, 25, 27),
+            (24, 26, 28),
+        ]
+    )
+
+    triplets = pts[idxs]  # (4, 3, 2)
+    a, b, c = triplets[:, 0], triplets[:, 1], triplets[:, 2]
+    v1 = a - b
+    v2 = c - b
+    dot = np.sum(v1 * v2, axis=1)
+    norm = np.linalg.norm(v1, axis=1) * np.linalg.norm(v2, axis=1) + 1e-6
+    cos = dot / norm
+    angles = np.degrees(np.arccos(np.clip(cos, -1.0, 1.0)))
+    return angles.astype(np.float32)
 
 
 # Индексы для углов: (плечо-локоть-запястье), (бедро-колено-лодыжка)
@@ -285,13 +298,26 @@ ntu_idxs = [(5, 7, 9),  # левый локоть
 
 
 def calc_angles_ntu(pts):
-    def ang(a, b, c):
-        v1, v2 = a - b, c - b
-        cos = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
-        return np.degrees(np.arccos(np.clip(cos, -1.0, 1.0)))
+    """Return four elbow/knee angles for an NTU-style skeleton."""
 
-    idxs = [(5, 7, 9), (6, 8, 10), (11, 13, 15), (12, 14, 16)]
-    return np.array([ang(pts[i], pts[j], pts[k]) for i, j, k in idxs], dtype=np.float32)
+    idxs = np.array(
+        [
+            (5, 7, 9),
+            (6, 8, 10),
+            (11, 13, 15),
+            (12, 14, 16),
+        ]
+    )
+
+    triplets = pts[idxs]
+    a, b, c = triplets[:, 0], triplets[:, 1], triplets[:, 2]
+    v1 = a - b
+    v2 = c - b
+    dot = np.sum(v1 * v2, axis=1)
+    norm = np.linalg.norm(v1, axis=1) * np.linalg.norm(v2, axis=1) + 1e-6
+    cos = dot / norm
+    angles = np.degrees(np.arccos(np.clip(cos, -1.0, 1.0)))
+    return angles.astype(np.float32)
 
 
 def put_text(img, text, pos, color=(255, 255, 255), font_scale=0.6, thickness=1):
