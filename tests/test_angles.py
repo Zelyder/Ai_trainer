@@ -55,6 +55,7 @@ from pathlib import Path
 format_spec = importlib.util.spec_from_file_location('format', Path(__file__).resolve().parents[1] / 'format.py')
 format = importlib.util.module_from_spec(format_spec)
 format_spec.loader.exec_module(format)
+sys.modules.setdefault('format', format)
 calculate_angle = format.calculate_angle
 
 ai2_path = Path(__file__).resolve().parents[1] / 'ai2.py'
@@ -177,5 +178,25 @@ def test_generate_recommendations_extended():
         # Expect at least one hint about the changed joint
         hint = messages[triple]
         assert any(hint in r for r in recs)
+
+
+def test_speak_invokes_generate_recommendations(monkeypatch):
+    called = {}
+
+    def fake_gen(ref, real):
+        called['args'] = (ref, real)
+        return ['hint']
+
+    monkeypatch.setattr(ai2, 'spoken_hints', set(), raising=False)
+    monkeypatch.setattr(ai2, 'speak_async', lambda msg: called.setdefault('spoken', []).append(msg))
+    monkeypatch.setattr(ai2.format, 'generate_recommendations', fake_gen)
+
+    user = [[0, 0]] * 29
+    ref = [[1, 1]] * 29
+    hints = ai2.speak(user, ref)
+
+    assert called['args'] == (ref, user)
+    assert hints == ['hint']
+    assert called.get('spoken') == ['hint']
 
 
