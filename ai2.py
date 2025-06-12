@@ -52,7 +52,7 @@ def speak_async(msg):
 
 def speak(user_pts, ref_pts):
     """Generate and voice hints using ``format.generate_recommendations``."""
-    hints = format.generate_recommendations(ref_pts, user_pts)
+    hints = format.generate_recommendations(ref_pts, user_pts, tolerance=ANGLE_TOLERANCE)
     global spoken_hints
     new_spoken = set()
     for msg in hints:

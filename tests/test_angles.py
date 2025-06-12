@@ -174,7 +174,7 @@ def test_generate_recommendations_extended():
         i, j, k = triple
         real[k] = np.array([1, 0])  # distort one joint
 
-        recs = format.generate_recommendations(ideal, real)
+        recs = format.generate_recommendations(ideal, real, tolerance=10)
         # Expect at least one hint about the changed joint
         hint = messages[triple]
         assert any(hint in r for r in recs)
@@ -183,8 +183,8 @@ def test_generate_recommendations_extended():
 def test_speak_invokes_generate_recommendations(monkeypatch):
     called = {}
 
-    def fake_gen(ref, real):
-        called['args'] = (ref, real)
+    def fake_gen(ref, real, tolerance=None):
+        called['args'] = (ref, real, tolerance)
         return ['hint']
 
     monkeypatch.setattr(ai2, 'spoken_hints', set(), raising=False)
@@ -195,7 +195,7 @@ def test_speak_invokes_generate_recommendations(monkeypatch):
     ref = [[1, 1]] * 29
     hints = ai2.speak(user, ref)
 
-    assert called['args'] == (ref, user)
+    assert called['args'] == (ref, user, ai2.ANGLE_TOLERANCE)
     assert hints == ['hint']
     assert called.get('spoken') == ['hint']
 
