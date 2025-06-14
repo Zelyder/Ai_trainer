@@ -85,7 +85,9 @@ tolerance is supplied the default of 10 degrees is used.
 `pipeline.py` can compare two videos frame by frame using Dynamic Time Warping
 (DTW).  The script extracts the skeleton sequence from each video and prints a
 DTW similarity score.  Lower values mean the movements are closer together,
-with a perfect match resulting in `0`.
+with a perfect match resulting in `0`.  It also plots the joint angle
+trajectories of both skeletons so you can visually judge how similar the
+motions are.
 
 Run the pipeline from the command line:
 

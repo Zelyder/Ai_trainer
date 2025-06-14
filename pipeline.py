@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
 import mediapipe as mp
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 
 from ai import normalize_skeleton
 from format import generate_recommendations
+from skeleton_dtw import calc_angles_ntu
 
 
 class LSTMClassifier(nn.Module):
@@ -68,6 +70,35 @@ def evaluate_error(reference, sequence):
     return float(np.mean(np.linalg.norm(diff, axis=(1, 2))))
 
 
+def compute_angle_sequence(sequence):
+    """Return NTU joint angles for each frame in ``sequence``."""
+    return np.array([calc_angles_ntu(frame) for frame in sequence], dtype=np.float32)
+
+
+def plot_angle_comparison(ref_seq, target_seq):
+    """Plot joint angle trajectories for two skeleton sequences."""
+    ref_angles = compute_angle_sequence(ref_seq)
+    target_angles = compute_angle_sequence(target_seq)
+
+    length = min(len(ref_angles), len(target_angles))
+    ref_angles = ref_angles[:length]
+    target_angles = target_angles[:length]
+
+    plt.figure(figsize=(10, 6))
+    joint_labels = ['L elbow', 'R elbow', 'L knee', 'R knee']
+    for i in range(ref_angles.shape[1]):
+        plt.plot(ref_angles[:, i], label=f'Ref {joint_labels[i]}')
+        plt.plot(target_angles[:, i], '--', label=f'Target {joint_labels[i]}')
+
+    plt.xlabel('Frame')
+    plt.ylabel('Angle (degrees)')
+    plt.title('Skeleton Angle Comparison')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
 def classify_sequence(sequence, model):
     """Возвращает предсказанный класс для последовательности."""
     model.eval()
@@ -115,6 +146,8 @@ def run_pipeline(reference_video, target_video, model_path=None, tolerance=10):
             print("-", r)
     else:
         print("No significant deviations detected.")
+
+    plot_angle_comparison(ref, seq)
 
 
 if __name__ == "__main__":
